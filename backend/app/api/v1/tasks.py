@@ -211,9 +211,7 @@ def add_project_member_endpoint(
     payload: ProjectMemberAddRequest,
     current_user: CurrentUser = Depends(get_current_user),
 ) -> ProjectMemberResponse:
-    with get_db_session() as session:
-        require_sensitive_review_access(session, project_id, current_user.id)
-    return add_project_member(project_id, payload)
+    return add_project_member(project_id, payload, actor_user_id=current_user.id)
 
 
 @router.get("/projects/{project_id}/members", response_model=ProjectMemberListResponse)
