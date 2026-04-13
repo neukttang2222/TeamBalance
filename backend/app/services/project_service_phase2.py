@@ -264,7 +264,8 @@ def create_project(team_id: str, payload: ProjectCreateRequest, actor_user_id: s
             updated_at=now,
         )
         session.add(project)
-
+        session.flush()
+        
         if created_by:
             _ensure_team_member(session, team_id, created_by, ProjectRole.OWNER.value, now)
             _ensure_project_member(
@@ -353,10 +354,16 @@ def delete_project(project_id: str, actor_user_id: str) -> ProjectResponse:
         return response
 
 
-def add_project_member(project_id: str, payload: ProjectMemberAddRequest) -> ProjectMemberResponse:
+def add_project_member(
+    project_id: str,
+    payload: ProjectMemberAddRequest,
+    actor_user_id: str | None = None,
+) -> ProjectMemberResponse:
     now = _now()
     with get_db_session() as session:
         project = get_project_or_404(session, project_id)
+        if actor_user_id is not None:
+            require_sensitive_review_access(session, project_id, actor_user_id)
         if payload.email:
             user = find_existing_user_by_email(session, payload.email)
             target_user_id = user.id
@@ -837,8 +844,8 @@ def _require_project_team_member(session, team_id: str, user_id: str) -> TeamMem
     member = _get_team_member(session, team_id, user_id)
     if member is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="해당 프로젝트에 참여하려면 먼저 팀에 소속되어야 합니다.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="selected user is not a team member",
         )
     return member
 
