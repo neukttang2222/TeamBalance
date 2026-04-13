@@ -1,0 +1,593 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card context-card dashboard-hero-card">
+        <div class="section-head context-head dashboard-hero-head">
+          <div>
+            <p class="eyebrow">Project Dashboard</p>
+            <h1>프로젝트 기여도 요약</h1>
+            <p class="page-description dashboard-compact-description">현재 프로젝트에서 승인 완료된 작업 기준으로 집계된 최종 결과를 확인하는 화면입니다.</p>
+          </div>
+          <button id="dashboard-logout" type="button">로그아웃</button>
+        </div>
+        <nav class="page-tabs" aria-label="Primary Navigation">
+          <a class="page-tab" href="./projects.html">Project Entry</a>
+          <a class="page-tab" href="./index.html">Task Workspace</a>
+          <a class="page-tab is-active" href="./dashboard.html">Project Dashboard</a>
+        </nav>
+        <div class="dashboard-context-strip">
+          <label class="dashboard-compact-picker">
+            <span>현재 프로젝트</span>
+            <select id="dashboard-context-project"></select>
+          </label>
+          <div class="dashboard-summary-card">
+            <span class="dashboard-summary-card-label">프로젝트명</span>
+            <strong id="dashboard-project-name">-</strong>
+            <small>현재 결과를 집계하는 프로젝트입니다.</small>
+          </div>
+          <div class="dashboard-summary-card">
+            <span class="dashboard-summary-card-label">현재 사용자</span>
+            <strong id="dashboard-viewer">-</strong>
+            <small>조회 기준 사용자 정보입니다.</small>
+          </div>
+        </div>
+        <p id="dashboard-context-summary" class="muted context-summary"></p>
+      </section>
+
+      <section class="card dashboard-status-card">
+        <div class="section-head">
+          <div>
+            <h2>결과 화면</h2>
+            <p class="field-help section-help">현재 프로젝트 기준으로 팀원별 최종 누적 점수와 기여도 비율을 확인할 수 있습니다.</p>
+          </div>
+          <div class="actions compact-actions">
+            <button id="load-contribution" type="button">다시 조회</button>
+          </div>
+        </div>
+        <p id="dashboard-message" class="muted"></p>
+      </section>
+
+      <section id="dashboard-summary-section" class="dashboard-summary-strip" hidden>
+        <div class="dashboard-stat-grid">
+          <div class="dashboard-stat-tile">
+            <span class="dashboard-stat-label">전체 참여 인원</span>
+            <strong id="summary-member-count" class="dashboard-stat-value">0명</strong>
+            <small class="dashboard-stat-meta">집계에 포함된 팀원 수</small>
+          </div>
+          <div class="dashboard-stat-tile">
+            <span class="dashboard-stat-label">완료한 task 수</span>
+            <strong id="summary-task-count" class="dashboard-stat-value">0건</strong>
+            <small class="dashboard-stat-meta">승인 기준 완료 작업 수</small>
+          </div>
+          <div class="dashboard-stat-tile">
+            <span class="dashboard-stat-label">총 누적 점수</span>
+            <strong id="summary-total-score" class="dashboard-stat-value">0점</strong>
+            <small class="dashboard-stat-meta">프로젝트 전체 최종 점수 합계</small>
+          </div>
+          <div class="dashboard-stat-tile">
+            <span class="dashboard-stat-label">최고 기여자</span>
+            <strong id="summary-top-member" class="dashboard-stat-value">-</strong>
+            <small class="dashboard-stat-meta">현재 1위 기여자</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-results-stack">
+        <article class="card">
+          <div class="section-head dashboard-table-head">
+            <div>
+              <h2>기여도 표</h2>
+              <p class="field-help section-help">이름, 완료한 task 수, 최종 누적 점수를 기준으로 정리한 결과입니다.</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>완료한 task 수</th>
+                <th>최종 누적 점수</th>
+              </tr>
+            </thead>
+            <tbody id="contribution-body">
+              <tr>
+                <td colspan="3" class="empty-cell">프로젝트를 선택하면 기여도 결과를 여기에 표시합니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="card">
+          <div class="section-head dashboard-table-head">
+            <div>
+              <h2>기여도 비율</h2>
+              <p class="field-help section-help">승인된 최종 점수 기준 비율입니다.</p>
+            </div>
+          </div>
+          <div id="contribution-chart-panel" class="dashboard-chart-layout">
+            <div>
+              <div id="contribution-rank-list" class="dashboard-rank-list"></div>
+              <button id="contribution-rank-toggle" type="button" class="dashboard-rank-toggle" hidden></button>
+            </div>
+            <div class="dashboard-chart-panel">
+              <div id="contribution-chart" class="dashboard-donut-shell" aria-label="기여도 비율 차트"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="./api.js"></script>
+    <script>
+      const projectSelect = document.getElementById("dashboard-context-project");
+      const projectNameDisplay = document.getElementById("dashboard-project-name");
+      const viewerDisplay = document.getElementById("dashboard-viewer");
+      const contextSummary = document.getElementById("dashboard-context-summary");
+      const loadButton = document.getElementById("load-contribution");
+      const logoutButton = document.getElementById("dashboard-logout");
+      const message = document.getElementById("dashboard-message");
+      const tableBody = document.getElementById("contribution-body");
+      const chart = document.getElementById("contribution-chart");
+      const rankList = document.getElementById("contribution-rank-list");
+      const rankToggle = document.getElementById("contribution-rank-toggle");
+      const summarySection = document.getElementById("dashboard-summary-section");
+      const summaryMemberCount = document.getElementById("summary-member-count");
+      const summaryTaskCount = document.getElementById("summary-task-count");
+      const summaryTotalScore = document.getElementById("summary-total-score");
+      const summaryTopMember = document.getElementById("summary-top-member");
+      const DEFAULT_VISIBLE_CONTRIBUTORS = 5;
+
+      const CHART_COLORS = [
+        "#2563eb",
+        "#0f766e",
+        "#ea580c",
+        "#7c3aed",
+        "#dc2626",
+        "#0891b2",
+        "#65a30d",
+        "#d97706",
+      ];
+
+      const state = {
+        currentUser: null,
+        projectMembers: [],
+        context: {
+          projectId: loadStoredProjectId(),
+          userId: "",
+        },
+        contributions: [],
+        contributionListExpanded: false,
+      };
+
+      initializeContext();
+
+      projectSelect.addEventListener("change", handleContextChange);
+      loadButton.addEventListener("click", loadContribution);
+      logoutButton.addEventListener("click", handleLogout);
+      rankToggle.addEventListener("click", toggleContributionList);
+
+      async function initializeContext() {
+        const session = window.AuthApi.load();
+        if (!session?.access_token) {
+          window.AuthApi.redirectToLogin("dashboard.html", "auth_required");
+          return;
+        }
+
+        try {
+          state.currentUser = await window.AuthApi.fetchCurrentUser();
+          state.context.userId = state.currentUser.id;
+          await loadProjectOptions();
+        } catch (error) {
+          window.AuthApi.clear();
+          window.AuthApi.redirectToLogin("dashboard.html", "expired");
+          return;
+        }
+
+        applySavedProjectContext();
+        renderContextOptions();
+        syncContextUI();
+        loadContribution();
+      }
+
+      function loadStoredProjectId() {
+        try {
+          const raw = window.localStorage.getItem(window.AppContext.storageKey);
+          if (!raw) {
+            return "";
+          }
+          const parsed = JSON.parse(raw);
+          return parsed?.projectId ? String(parsed.projectId) : "";
+        } catch (error) {
+          return "";
+        }
+      }
+
+      async function loadProjectOptions() {
+        const teamsResponse = await window.TaskApi.fetchTeams();
+        const teams = teamsResponse.teams || [];
+        const projectResponses = await Promise.all(
+          teams.map((team) => window.TaskApi.fetchTeamProjects(team.team_id)),
+        );
+        const projects = projectResponses.flatMap((response) => response.projects || []);
+        window.AppContext.updateOptions({ teams, projects });
+      }
+
+      function getProjects() {
+        return window.AppContext.options.projects || [];
+      }
+
+      function getCurrentProject() {
+        return getProjects().find((project) => project.id === state.context.projectId) || null;
+      }
+
+      function applySavedProjectContext() {
+        const validIds = new Set(getProjects().map((project) => project.id));
+        if (!state.context.projectId || !validIds.has(state.context.projectId)) {
+          state.context.projectId = "";
+          return;
+        }
+        window.AppContext.bootstrap({
+          projectId: state.context.projectId,
+          userId: state.currentUser?.id || state.context.userId,
+        });
+      }
+
+      function renderContextOptions() {
+        const projects = getProjects();
+        if (!projects.length) {
+          projectSelect.innerHTML = '<option value="">접근 가능한 프로젝트 없음</option>';
+          projectSelect.disabled = true;
+          return;
+        }
+
+        projectSelect.disabled = false;
+        projectSelect.innerHTML = [
+          '<option value="">프로젝트 선택</option>',
+          ...projects.map(
+            (project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}</option>`,
+          ),
+        ].join("");
+      }
+
+      function handleContextChange() {
+        state.context.projectId = projectSelect.value || "";
+        state.contributionListExpanded = false;
+        if (state.context.projectId) {
+          window.AppContext.bootstrap({
+            projectId: state.context.projectId,
+            userId: state.currentUser?.id || state.context.userId,
+          });
+        }
+        syncContextUI();
+        loadContribution();
+      }
+
+      function syncContextUI() {
+        const project = getCurrentProject();
+        projectSelect.value = state.context.projectId || "";
+        viewerDisplay.textContent = formatUserDisplay(state.currentUser);
+        projectNameDisplay.textContent = project?.name || "프로젝트 미선택";
+
+        if (!getProjects().length) {
+          contextSummary.textContent = "현재 로그인 사용자 기준으로 접근 가능한 프로젝트가 없습니다. Project Entry에서 팀과 프로젝트를 먼저 확인해 주세요.";
+          loadButton.disabled = true;
+          return;
+        }
+
+        if (!state.context.projectId) {
+          contextSummary.textContent = "현재 프로젝트가 선택되지 않았습니다. Project Entry에서 선택한 프로젝트를 이어받거나 여기서 직접 선택해 주세요.";
+          loadButton.disabled = true;
+          return;
+        }
+
+        loadButton.disabled = false;
+        contextSummary.textContent = `${project?.name || state.context.projectId} 기준의 기여도 요약 화면입니다. 승인 완료된 작업을 바탕으로 팀원별 최종 결과를 집계합니다.`;
+      }
+
+      async function loadContribution() {
+        state.contributionListExpanded = false;
+        resetSummary();
+        const projects = getProjects();
+        const project = getCurrentProject();
+
+        if (!projects.length) {
+          renderTableEmpty("접근 가능한 프로젝트가 없어 기여도 결과를 표시할 수 없습니다.");
+          renderChartEmpty("프로젝트 접근 권한이 없어 차트를 표시할 수 없습니다.");
+          message.textContent = "접근 가능한 프로젝트가 없습니다.";
+          return;
+        }
+
+        if (!state.context.projectId || !project) {
+          renderTableEmpty("프로젝트를 먼저 선택해 주세요.");
+          renderChartEmpty("프로젝트를 선택하면 기여도 비율을 표시합니다.");
+          message.textContent = "현재 프로젝트가 선택되지 않았습니다.";
+          return;
+        }
+
+        message.textContent = `${project.name}의 기여도 결과를 불러오고 있습니다.`;
+        renderTableEmpty("승인 완료된 작업 기준으로 기여도 결과를 정리하고 있습니다.");
+        renderChartEmpty("차트를 준비하고 있습니다.");
+
+        try {
+          state.projectMembers = await loadProjectMembers(state.context.projectId);
+          const response = await window.TaskApi.fetchContribution(state.context.projectId);
+          const contributions = sortContributions(response.contributions || []);
+          state.contributions = contributions;
+
+          if (!contributions.length) {
+            renderTableEmpty("아직 기여도 데이터가 없습니다.");
+            renderChartEmpty("승인 완료된 task가 없어 기여도 비율을 표시할 수 없습니다.");
+            message.textContent = `${project.name}에는 아직 표시할 기여도 집계가 없습니다.`;
+            return;
+          }
+
+          renderSummary(contributions);
+          renderContributionTable(contributions);
+          renderContributionChart(contributions);
+          message.textContent = `${project.name} 기준으로 ${contributions.length}명의 기여도 결과를 확인했습니다.`;
+        } catch (error) {
+          renderTableEmpty("기여도 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+          renderChartEmpty("기여도 차트를 불러오지 못했습니다.");
+          message.textContent = `기여도 조회에 실패했습니다. ${error.message}`;
+        }
+      }
+
+      function sortContributions(contributions) {
+        return [...contributions].sort((a, b) => {
+          const scoreDiff = Number(b.total_weighted_score || 0) - Number(a.total_weighted_score || 0);
+          if (scoreDiff !== 0) {
+            return scoreDiff;
+          }
+          return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+        });
+      }
+
+      function renderContributionTable(contributions) {
+        tableBody.innerHTML = contributions
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(getContributionDisplayName(item))}</td>
+                <td>${formatCount(item.completed_tasks, "건")}</td>
+                <td>${formatScore(item.total_weighted_score)}점</td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      function renderSummary(contributions) {
+        const totalMembers = contributions.length;
+        const totalTasks = contributions.reduce((sum, item) => sum + Number(item.completed_tasks || 0), 0);
+        const totalScore = contributions.reduce((sum, item) => sum + Number(item.total_weighted_score || 0), 0);
+        const topMember = contributions[0];
+
+        summarySection.hidden = false;
+        summaryMemberCount.textContent = `${totalMembers}명`;
+        summaryTaskCount.textContent = `${totalTasks}건`;
+        summaryTotalScore.textContent = `${formatScore(totalScore)}점`;
+        summaryTopMember.textContent = topMember
+          ? `${getContributionDisplayName(topMember)} · ${formatScore(topMember.total_weighted_score)}점`
+          : "-";
+      }
+
+      function resetSummary() {
+        state.contributions = [];
+        summarySection.hidden = true;
+        summaryMemberCount.textContent = "0명";
+        summaryTaskCount.textContent = "0건";
+        summaryTotalScore.textContent = "0점";
+        summaryTopMember.textContent = "-";
+      }
+
+      function renderContributionChart(contributions) {
+        const totalScore = contributions.reduce((sum, item) => sum + Number(item.total_weighted_score || 0), 0);
+        if (totalScore <= 0) {
+          renderChartEmpty("누적 점수가 0점이어서 기여도 비율을 표시할 수 없습니다.");
+          return;
+        }
+
+        let accumulated = 0;
+        const segments = contributions.map((item, index) => {
+          const score = Number(item.total_weighted_score || 0);
+          const portion = (score / totalScore) * 100;
+          const color = CHART_COLORS[index % CHART_COLORS.length];
+          const start = accumulated;
+          const end = accumulated + portion;
+          accumulated = end;
+          return {
+            color,
+            label: getContributionDisplayName(item),
+            score,
+            portion,
+            start,
+            end,
+          };
+        });
+
+        chart.className = "dashboard-donut-shell";
+        chart.innerHTML = buildDonutSvg(segments, totalScore);
+        renderContributionRankList(segments);
+      }
+
+      function renderContributionRankList(segments) {
+        const isExpandable = segments.length > DEFAULT_VISIBLE_CONTRIBUTORS;
+        const visibleSegments = state.contributionListExpanded
+          ? segments
+          : segments.slice(0, DEFAULT_VISIBLE_CONTRIBUTORS);
+
+        rankList.innerHTML = visibleSegments
+          .map(
+            (segment) => `
+              <div class="dashboard-rank-item">
+                <span class="dashboard-rank-color" style="background:${segment.color}"></span>
+                <div class="dashboard-rank-copy">
+                  <strong>${escapeHtml(segment.label)}</strong>
+                  <span>${formatScore(segment.score)}점 · ${formatPercent(segment.portion)}</span>
+                </div>
+              </div>
+            `,
+          )
+          .join("");
+
+        if (!isExpandable) {
+          rankToggle.hidden = true;
+          rankToggle.textContent = "";
+          return;
+        }
+
+        rankToggle.hidden = false;
+        rankToggle.textContent = state.contributionListExpanded
+          ? "접기"
+          : `나머지 ${segments.length - DEFAULT_VISIBLE_CONTRIBUTORS}명 더보기`;
+      }
+
+      function renderChartEmpty(text) {
+        chart.className = "dashboard-donut-shell dashboard-donut-empty";
+        chart.innerHTML = `<div class="dashboard-donut-empty-state">${escapeHtml(text)}</div>`;
+        rankList.innerHTML = `<p class="empty-state">${escapeHtml(text)}</p>`;
+        rankToggle.hidden = true;
+        rankToggle.textContent = "";
+      }
+
+      function renderTableEmpty(text) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="empty-cell">${escapeHtml(text)}</td></tr>`;
+      }
+
+      async function loadProjectMembers(projectId) {
+        if (!projectId) {
+          return [];
+        }
+        try {
+          const response = await window.TaskApi.fetchProjectMembers(projectId);
+          return response.members || [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      async function handleLogout() {
+        await window.AuthApi.logout();
+        window.location.href = window.AuthApi.buildLoginUrl("dashboard.html", "logged_out");
+      }
+
+      function getContributionDisplayName(item) {
+        const rawName = String(item?.name || "").trim();
+        const matchedMember = state.projectMembers.find((member) => {
+          const candidates = [
+            member.display_name,
+            member.email,
+            member.user_id,
+          ].map((value) => String(value || "").trim()).filter(Boolean);
+          return candidates.includes(rawName);
+        });
+        return getPreferredUserLabel(matchedMember, rawName);
+      }
+
+      function getPreferredUserLabel(member, fallback = "") {
+        if (member) {
+          const displayName = String(member.display_name || "").trim();
+          const email = String(member.email || "").trim();
+          const userId = String(member.user_id || "").trim();
+          return displayName || email || userId || fallback || "-";
+        }
+        return String(fallback || "").trim() || "-";
+      }
+
+      function toggleContributionList() {
+        state.contributionListExpanded = !state.contributionListExpanded;
+        renderContributionChart(state.contributions);
+      }
+
+      function formatUserDisplay(user) {
+        return window.AuthApi.getPreferredUserDisplay({
+          display_name: user?.display_name,
+          email: user?.email,
+          user_id: user?.id,
+        });
+      }
+
+      function formatScore(value) {
+        const score = Number(value);
+        if (!Number.isFinite(score)) {
+          return "0";
+        }
+        return Number.isInteger(score) ? String(score) : String(Number(score.toFixed(2)));
+      }
+
+      function formatPercent(value) {
+        const percent = Number(value);
+        if (!Number.isFinite(percent)) {
+          return "0%";
+        }
+        return `${Number(percent.toFixed(1))}%`;
+      }
+
+      function formatCount(value, suffix) {
+        const count = Number(value);
+        if (!Number.isFinite(count)) {
+          return `0${suffix}`;
+        }
+        return `${count}${suffix}`;
+      }
+
+      function buildDonutSvg(segments, totalScore) {
+        const radius = 84;
+        const circumference = 2 * Math.PI * radius;
+        const center = 110;
+        let progress = 0;
+
+        const circles = segments.map((segment) => {
+          const length = circumference * (segment.portion / 100);
+          const dashArray = `${length} ${circumference - length}`;
+          const dashOffset = -progress;
+          progress += length;
+          return `
+            <circle
+              class="dashboard-donut-segment"
+              cx="${center}"
+              cy="${center}"
+              r="${radius}"
+              fill="none"
+              stroke="${segment.color}"
+              stroke-width="26"
+              stroke-linecap="butt"
+              stroke-dasharray="${dashArray}"
+              stroke-dashoffset="${dashOffset}"
+            ></circle>
+          `;
+        }).join("");
+
+        return `
+          <svg class="dashboard-donut-svg" viewBox="0 0 220 220" role="img" aria-label="기여도 도넛 차트">
+            <g transform="rotate(-90 110 110)">
+              <circle cx="110" cy="110" r="${radius}" fill="none" stroke="#e2e8f0" stroke-width="26"></circle>
+              ${circles}
+            </g>
+            <foreignObject x="48" y="72" width="124" height="76">
+              <div xmlns="http://www.w3.org/1999/xhtml" class="dashboard-donut-center">
+                <strong>${escapeHtml(formatScore(totalScore))}점</strong>
+                <span>총 누적 점수</span>
+              </div>
+            </foreignObject>
+          </svg>
+        `;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page narrow-page">
+      <section class="card context-card auth-card">
+        <div class="section-head context-head">
+          <div>
+            <p class="eyebrow">TeamBalance</p>
+            <h1>회원가입</h1>
+            <p class="page-description">TeamBalance 사용을 위한 계정을 생성합니다.</p>
+          </div>
+        </div>
+        <form id="signup-form" class="auth-form" novalidate>
+          <label>
+            <span>이름</span>
+            <input id="signup-name" type="text" placeholder="이름을 입력해 주세요." autocomplete="name" required />
+          </label>
+          <label>
+            <span>이메일</span>
+            <input id="signup-email" type="email" placeholder="name@example.com" autocomplete="email" required />
+          </label>
+          <label>
+            <span>비밀번호</span>
+            <input id="signup-password" type="password" placeholder="최소 8자 이상 입력해 주세요." autocomplete="new-password" required />
+          </label>
+          <label>
+            <span>비밀번호 확인</span>
+            <input id="signup-password-confirm" type="password" placeholder="비밀번호를 다시 입력해 주세요." autocomplete="new-password" required />
+          </label>
+          <div class="actions auth-actions">
+            <button id="signup-submit" type="submit">회원가입</button>
+          </div>
+        </form>
+        <p id="signup-message" class="auth-message muted context-summary"></p>
+        <p class="auth-footer">
+          이미 계정이 있으신가요?
+          <a id="login-link" class="context-link" href="./login.html">로그인</a>
+        </p>
+      </section>
+    </main>
+
+    <script src="./api.js"></script>
+    <script>
+      const form = document.getElementById("signup-form");
+      const nameInput = document.getElementById("signup-name");
+      const emailInput = document.getElementById("signup-email");
+      const passwordInput = document.getElementById("signup-password");
+      const confirmInput = document.getElementById("signup-password-confirm");
+      const submitButton = document.getElementById("signup-submit");
+      const loginLink = document.getElementById("login-link");
+      const message = document.getElementById("signup-message");
+      const nextPath = window.AuthApi.getSafeNextPath("projects.html");
+
+      loginLink.href = `./login.html${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
+      bootstrapExistingSession();
+      form.addEventListener("submit", handleSignup);
+
+      async function bootstrapExistingSession() {
+        const session = window.AuthApi.load();
+        if (!session?.access_token) {
+          return;
+        }
+
+        try {
+          await window.AuthApi.fetchCurrentUser();
+          window.location.href = `./${nextPath}`;
+        } catch (error) {
+          window.AuthApi.clear();
+        }
+      }
+
+      async function handleSignup(event) {
+        event.preventDefault();
+        const validationMessage = validateForm();
+        if (validationMessage) {
+          setMessage(validationMessage, "error");
+          return;
+        }
+
+        submitButton.disabled = true;
+        setMessage("회원가입 중입니다.", "");
+
+        try {
+          await window.AuthApi.signup({
+            name: nameInput.value.trim(),
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+          });
+          setMessage("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.", "success");
+          window.setTimeout(() => {
+            window.location.href = `./login.html?email=${encodeURIComponent(emailInput.value.trim())}${nextPath ? `&next=${encodeURIComponent(nextPath)}` : ""}`;
+          }, 600);
+        } catch (error) {
+          setMessage(mapSignupError(error), "error");
+        } finally {
+          submitButton.disabled = false;
+        }
+      }
+
+      function validateForm() {
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const confirmation = confirmInput.value;
+
+        if (!name) {
+          return "이름을 입력해 주세요.";
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          return "이메일 형식이 올바르지 않습니다.";
+        }
+
+        if (password.length < 8) {
+          return "비밀번호는 최소 8자 이상이어야 합니다.";
+        }
+
+        if (password !== confirmation) {
+          return "비밀번호가 일치하지 않습니다.";
+        }
+
+        return "";
+      }
+
+      function mapSignupError(error) {
+        const detail = String(error?.message || "");
+        if (detail.includes("email already registered")) {
+          return "이미 사용 중인 이메일입니다.";
+        }
+        if (detail.includes("valid email")) {
+          return "이메일 형식이 올바르지 않습니다.";
+        }
+        if (detail.includes("at least 8")) {
+          return "비밀번호는 최소 8자 이상이어야 합니다.";
+        }
+        return "회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+      }
+
+      function setMessage(text, tone) {
+        message.textContent = text;
+        message.className = `auth-message context-summary${tone ? ` is-${tone}` : " muted"}`;
+      }
+    </script>
+  </body>
+</html>

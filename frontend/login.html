@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그인</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page narrow-page">
+      <section class="card context-card auth-card">
+        <div class="section-head context-head">
+          <div>
+            <p class="eyebrow">TeamBalance</p>
+            <h1>로그인</h1>
+            <p class="page-description">TeamBalance에 로그인하여 프로젝트와 작업을 관리하세요.</p>
+          </div>
+        </div>
+        <form id="login-form" class="auth-form">
+          <label>
+            <span>이메일</span>
+            <input id="login-email" type="email" placeholder="name@example.com" autocomplete="email" required />
+          </label>
+          <label>
+            <span>비밀번호</span>
+            <input id="login-password" type="password" placeholder="비밀번호를 입력해 주세요." autocomplete="current-password" required />
+          </label>
+          <div class="actions auth-actions">
+            <button id="login-submit" type="submit">로그인</button>
+          </div>
+        </form>
+        <p id="auth-message" class="auth-message muted context-summary"></p>
+        <p class="auth-footer">
+          계정이 없으신가요?
+          <a id="signup-link" class="context-link" href="./signup.html">회원가입</a>
+        </p>
+      </section>
+    </main>
+
+    <script src="./api.js"></script>
+    <script>
+      const form = document.getElementById("login-form");
+      const emailInput = document.getElementById("login-email");
+      const passwordInput = document.getElementById("login-password");
+      const submitButton = document.getElementById("login-submit");
+      const signupLink = document.getElementById("signup-link");
+      const message = document.getElementById("auth-message");
+      const nextPath = window.AuthApi.getSafeNextPath("projects.html");
+      const reasonMessage = window.AuthApi.getAuthReasonMessage();
+      const signupEmail = new URLSearchParams(window.location.search).get("email") || "";
+
+      if (signupEmail) {
+        emailInput.value = signupEmail;
+      }
+
+      signupLink.href = `./signup.html${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`;
+      setMessage(reasonMessage || "로그인 후 원래 보려던 페이지로 자동 복귀합니다.", "");
+
+      bootstrapExistingSession();
+      form.addEventListener("submit", handleLogin);
+
+      async function bootstrapExistingSession() {
+        const session = window.AuthApi.load();
+        if (!session?.access_token) {
+          return;
+        }
+
+        try {
+          await window.AuthApi.fetchCurrentUser();
+          window.location.href = `./${nextPath}`;
+        } catch (error) {
+          window.AuthApi.clear();
+          setMessage(reasonMessage || "세션이 만료되었습니다. 다시 로그인해 주세요.", "error");
+        }
+      }
+
+      async function handleLogin(event) {
+        event.preventDefault();
+        submitButton.disabled = true;
+        setMessage("로그인 중입니다.", "");
+
+        try {
+          await window.AuthApi.login({
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+          });
+          setMessage("로그인되었습니다. 이동 중입니다.", "success");
+          window.location.href = `./${nextPath}`;
+        } catch (error) {
+          setMessage("이메일 또는 비밀번호가 올바르지 않습니다.", "error");
+        } finally {
+          submitButton.disabled = false;
+        }
+      }
+
+      function setMessage(text, tone) {
+        message.textContent = text;
+        message.className = `auth-message context-summary${tone ? ` is-${tone}` : " muted"}`;
+      }
+    </script>
+  </body>
+</html>

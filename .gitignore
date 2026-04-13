@@ -1,0 +1,102 @@
+.venv/
+backend/.venv/
+__pycache__/
+.env
+node_modules/
+dist/
+.vscode/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vscode/
+.idea/
+
+# =========================
+# Git / archive artifacts
+# =========================
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# =========================
+# Python cache / build
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Local database / runtime files
+# =========================
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# =========================
+# Logs / temp outputs
+# =========================
+*.log
+logs/
+tmp/
+temp/
+
+# =========================
+# Test / local result artifacts
+# =========================
+submit_response.json
+*.out
+*.tmp
+
+# =========================
+# Frontend local/debug artifacts
+# =========================
+frontend/.dashboard-inline-check.js
+frontend/.projects-inline-check.js
+
+# =========================
+# Optional: keep docs, but ignore generated docs output
+# =========================
+site/
+.cache/
+
+
+
+_archive/
+docs/_archive/
+backend/_archive/
+frontend/_archive/

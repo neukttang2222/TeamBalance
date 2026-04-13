@@ -1,0 +1,36 @@
+from enum import StrEnum
+
+
+class TaskStatus(StrEnum):
+    TODO = "TODO"
+    GENERATING_Q = "GENERATING_Q"
+    AWAITING_A = "AWAITING_A"
+    SCORING = "SCORING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+
+
+class TaskWorkStatus(StrEnum):
+    DRAFT = "DRAFT"
+    ASSIGNED = "ASSIGNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUBMITTED_FOR_REVIEW = "SUBMITTED_FOR_REVIEW"
+    CHANGES_REQUESTED = "CHANGES_REQUESTED"
+    APPROVED = "APPROVED"
+    CLOSED = "CLOSED"
+    CANCELED = "CANCELED"
+
+
+class ScoreLockStatus(StrEnum):
+    UNLOCKED = "UNLOCKED"
+    LOCKED = "LOCKED"
+    LOCKED_WITH_BONUS = "LOCKED_WITH_BONUS"
+
+
+class TaskActivityAction(StrEnum):
+    APPROVE = "APPROVE"
+    REQUEST_CHANGES = "REQUEST_CHANGES"
+    DELTA_BONUS_GRANTED = "DELTA_BONUS_GRANTED"
+    CLOSE = "CLOSE"
+    CANCEL = "CANCEL"
+    REOPEN = "REOPEN"

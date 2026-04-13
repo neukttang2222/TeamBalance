@@ -1,0 +1,408 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Workspace</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .workspace-context-panel{display:grid;gap:14px;margin-top:16px}.workspace-context-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.workspace-summary-band{padding:12px 14px;border:1px solid #dbe2ea;border-radius:8px;background:#fff}.workspace-summary-band .context-summary{margin-top:4px}.workspace-flow{display:grid;gap:16px}.workspace-zone-label{margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0;text-transform:uppercase;color:#64748b}.view-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:4px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.view-tab{flex:1 1 auto;padding:8px 10px;border:1px solid transparent;background:#f8fafc;color:#475569}.view-tab.is-active{border-color:#2563eb;background:#2563eb;color:#fff}.task-create-main{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.task-assignee-picker{display:grid;gap:10px;padding:12px;border:1px solid #dbe2ea;border-radius:8px;background:#f8fafc}.assignee-selected-row,.assignee-result-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;color:#0f172a;text-align:left}.assignee-selected-row small,.assignee-result-row small{display:block;margin-top:4px;color:#64748b;font-size:12px}.assignee-result-row{width:100%;margin-top:8px}.assignee-selected-row button{border:1px solid #cbd5e1;background:#fff;color:#0f172a}.task-create-launch{border-color:#dbe2ea;background:#fff}.task-create-launch .section-head{margin-bottom:0}.task-create-modal[hidden]{display:none}.task-create-modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px}.task-create-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.5)}.task-create-dialog{position:relative;z-index:1;width:min(760px,100%);max-height:calc(100vh - 48px);overflow:auto;padding:20px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;box-shadow:0 24px 60px rgba(15,23,42,.24)}.task-create-dialog-head{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:16px}.task-create-close{border:1px solid #cbd5e1;background:#fff;color:#0f172a}.task-edit-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.task-delete-button{background:#fff1f2;border:1px solid #fda4af;color:#be123c}.task-list-edit-wrap{margin-top:8px}.task-list-edit-button{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;font-size:12px;line-height:1.2}.detail-intro{margin:0 0 16px;color:#475569;line-height:1.6}.state-guide{display:grid;gap:8px;margin-top:12px}.state-guide-item{padding:10px 12px;border:1px solid #dbe2ea;border-radius:8px;background:#fff;font-size:13px;line-height:1.5}.result-readout{display:grid;gap:12px}.review-action-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.35fr);gap:12px}.review-actions-note{margin-top:10px}.context-actions{justify-content:space-between;flex-wrap:wrap}@media (max-width:900px){.workspace-context-fields,.task-create-main,.review-action-grid{grid-template-columns:1fr}}@media (max-width:720px){.task-create-dialog-head{display:grid}.task-create-modal{padding:14px}}
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="card context-card">
+        <div class="section-head context-head">
+          <div>
+            <p class="eyebrow">Current Context</p>
+            <h1>Task Workspace</h1>
+            <p class="page-description">작업 등록부터 제출, AI 검증 질문 응답, 최종 평가 확인까지 한 화면에서 이어서 관리합니다.</p>
+          </div>
+        </div>
+        <nav class="page-tabs" aria-label="Primary Navigation">
+          <a class="page-tab" href="./projects.html">Project Entry</a>
+          <a class="page-tab is-active" href="./index.html">Task Workspace</a>
+          <a class="page-tab" href="./dashboard.html">Project Dashboard</a>
+        </nav>
+        <div class="workspace-context-panel">
+        <div class="workspace-context-fields">
+          <label>
+            <span>현재 프로젝트</span>
+            <select id="context-project"></select>
+          </label>
+          <div class="context-fixed-field">
+            <span>현재 사용자</span>
+            <p id="context-user-display" class="fixed-value">-</p>
+            <p class="field-help">로그인 세션 기준 사용자입니다.</p>
+          </div>
+          <div class="context-fixed-field">
+            <span>작업 보기</span>
+            <select id="context-view" hidden aria-hidden="true">
+              <option value="my" selected>my</option>
+              <option value="overview">overview</option>
+              <option value="sensitive-review">sensitive-review</option>
+            </select>
+            <div id="context-view-tabs" class="view-tabs" role="group" aria-label="작업 보기">
+              <button type="button" class="view-tab is-active" data-task-view="my" aria-pressed="true">내 작업</button>
+              <button type="button" class="view-tab" data-task-view="overview" aria-pressed="false">프로젝트 전체</button>
+              <button type="button" class="view-tab" data-task-view="sensitive-review" aria-pressed="false">검토</button>
+            </div>
+            <small class="field-help">member는 내 작업/프로젝트 전체, manager와 owner는 검토 화면까지 사용할 수 있습니다.</small>
+          </div>
+        </div>
+        <div class="workspace-summary-band">
+          <p class="workspace-zone-label">현재 작업 컨텍스트</p>
+          <p id="context-summary" class="muted context-summary"></p>
+        </div>
+        <p id="project-entry-message" class="muted context-summary"></p>
+        </div>
+        <div class="actions context-actions">
+          <a class="context-link" href="./projects.html">프로젝트 변경/관리</a>
+          <button id="workspace-logout-button" type="button">로그아웃</button>
+        </div>
+      </section>
+
+      <section class="card task-create-launch">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">A. Task Creation</p>
+            <h2>새 작업</h2>
+            <p class="field-help section-help">현재 프로젝트에 새 task를 만들 때만 생성 팝업을 엽니다.</p>
+          </div>
+          <button id="open-task-create-modal" type="button">Task 생성</button>
+        </div>
+      </section>
+
+      <div id="task-create-modal" class="task-create-modal" hidden>
+        <div class="task-create-backdrop" data-task-create-close="true"></div>
+        <section class="task-create-dialog" role="dialog" aria-modal="true" aria-labelledby="task-create-modal-title">
+          <div class="task-create-dialog-head">
+            <div>
+              <p class="eyebrow">Task Creation</p>
+              <h2 id="task-create-modal-title">Task 생성</h2>
+              <p id="task-create-modal-help" class="field-help section-help">현재 프로젝트 기준으로 task title, type, goal과 담당자를 지정합니다.</p>
+            </div>
+            <button class="task-create-close" type="button" data-task-create-close="true">닫기</button>
+          </div>
+          <form id="task-create-form" class="form-grid">
+          <input id="task-form-mode" type="hidden" value="create" />
+          <div class="task-create-main">
+          <label>
+            <span>task title</span>
+            <input id="title" name="title" type="text" required />
+            <small class="field-help">작업 제목은 팀원이 빠르게 이해할 수 있게 짧고 분명하게 적어 주세요.</small>
+          </label>
+          <label>
+            <span>task type</span>
+            <input id="task-type" name="task_type" type="text" required />
+            <small class="field-help">예: backend, frontend, docs, infra 처럼 작업 성격을 구분합니다.</small>
+          </label>
+          <label class="full-width">
+            <span>task goal</span>
+            <textarea id="task-goal" name="task_goal" rows="4" required></textarea>
+            <small class="field-help">무엇을 끝내려는 작업인지와 기대 결과를 간단히 적어 주세요.</small>
+          </label>
+          <div class="full-width task-assignee-picker">
+            <label>
+              <span>담당자 검색</span>
+              <input id="task-assignee-search" type="search" autocomplete="off" placeholder="현재 프로젝트 멤버 이름 또는 email 검색" />
+              <small id="task-assignee-message" class="field-help">현재 프로젝트 멤버 중에서 담당자를 선택해 주세요.</small>
+            </label>
+            <div id="task-assignee-selected" class="assignee-selected"></div>
+            <div id="task-assignee-results" class="assignee-results" aria-live="polite"></div>
+          </div>
+          <label class="weight-field">
+            <span>task_weight</span>
+            <small class="field-help">평가 점수를 직접 정하는 값이 아니라 작업 중요도를 나타냅니다. 기본값은 중(2)입니다.</small>
+            <select id="task-weight" name="task_weight" required>
+              <option value="1">1 = 하</option>
+              <option value="2" selected>2 = 중</option>
+              <option value="3">3 = 상</option>
+            </select>
+            <div class="weight-guide">
+              <span>하: 짧은 단건 작업</span>
+              <span>중: 일반적인 기본 작업</span>
+              <span>상: 영향 범위가 큰 핵심 작업</span>
+            </div>
+          </label>
+          </div>
+          <div class="actions full-width">
+            <div class="task-edit-actions">
+              <button id="task-form-submit-button" type="submit">작업 등록</button>
+              <button id="task-form-delete-button" class="task-delete-button" type="button" hidden>삭제</button>
+              <button type="button" data-task-create-close="true">취소</button>
+            </div>
+            <span id="create-message" class="muted"></span>
+          </div>
+          </form>
+        </section>
+      </div>
+
+      <section class="workspace-grid">
+        <section class="card task-list-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">B. Task List</p>
+              <h2>작업 목록</h2>
+              <p class="field-help section-help">현재 보기 기준으로 작업을 훑고, 이어서 볼 task를 선택합니다.</p>
+            </div>
+          </div>
+          <p id="empty-task-list" class="empty-state">생성된 task가 아직 없습니다.</p>
+          <div id="task-list" class="task-list"></div>
+          <button id="task-list-toggle" type="button" class="list-toggle-button" hidden></button>
+        </section>
+
+        <section class="card detail-card">
+          <p class="eyebrow">C. Task Detail / Work Area</p>
+          <h2>작업 상세와 수행</h2>
+          <p class="detail-intro">선택한 작업의 상태를 기준으로 제출, 답변, 결과 확인, 재시도 흐름을 이어갑니다.</p>
+          <p id="detail-empty" class="empty-state">왼쪽 목록에서 작업을 선택하면 제출, 답변, 결과 확인 화면이 여기에 표시됩니다.</p>
+
+          <div id="detail-body" hidden>
+            <section class="detail-section detail-hero">
+              <div class="detail-hero-top">
+                <div>
+                  <p class="eyebrow">Current Stage</p>
+                  <div class="detail-status-line">
+                    <strong id="task-stage-title">-</strong>
+                    <span id="task-status-badge" class="status-badge">-</span>
+                  </div>
+                  <p class="detail-status-meta"><strong>status</strong>: <span id="task-status">-</span></p>
+                </div>
+                <p id="task-action-hint" class="detail-action-hint">-</p>
+              </div>
+              <div id="task-meta" class="meta-list"></div>
+            </section>
+
+            <section id="loading-section" class="detail-section" hidden>
+              <h3>진행 상태</h3>
+              <p id="loading-text"></p>
+            </section>
+
+            <section id="submit-section" class="detail-section" hidden>
+              <h3>작업 결과 제출</h3>
+              <p class="field-help section-help">TODO 상태입니다. 완료한 작업 결과를 제출하면 AI 검증 질문 생성으로 이어집니다.</p>
+              <label>
+                <span>제출 내용</span>
+                <textarea id="content" rows="8"></textarea>
+              </label>
+              <p class="field-help section-help">완료한 작업 내용과 핵심 결과를 정리해 제출해 주세요.</p>
+              <div class="actions">
+                <button id="submit-button" type="button">결과 제출</button>
+              </div>
+            </section>
+
+            <section id="question-section" class="detail-section" hidden>
+              <h3>AI 검증 질문</h3>
+              <p class="field-help section-help">AWAITING_A 상태입니다. 질문을 확인하고 실제 수행 내용을 답변해 주세요.</p>
+              <p id="ai-question" class="question-box">-</p>
+              <label>
+                <span>답변</span>
+                <textarea id="user-answer" rows="6"></textarea>
+              </label>
+              <p class="field-help section-help">질문 의도에 맞춰 실제 수행 내용과 판단 근거를 짧고 분명하게 답변해 주세요.</p>
+              <div class="actions">
+                <button id="answer-button" type="button">답변 제출</button>
+              </div>
+            </section>
+
+            <section id="review-feedback-section" class="detail-section" hidden>
+              <h3>검토 의견</h3>
+              <p class="field-help section-help">담당자에게 공개되는 최근 검토 결과입니다.</p>
+              <div class="meta-list">
+                <div><strong>검토 상태</strong>: <span id="review-feedback-status">-</span></div>
+                <div id="review-feedback-message-wrap" hidden>
+                  <p><strong>검토 의견</strong></p>
+                  <p id="review-feedback-message" class="comment-box">-</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="result-section" class="detail-section" hidden>
+              <h3>평가 결과</h3>
+              <p id="result-policy-note" class="field-help section-help"></p>
+              <div class="result-readout">
+                <div>
+                  <p><strong>AI question</strong></p>
+                  <p id="result-ai-question" class="question-box">-</p>
+                </div>
+                <div>
+                  <p><strong>User answer</strong></p>
+                  <p id="result-user-answer" class="comment-box">-</p>
+                </div>
+                <div id="score-meta" class="meta-list">
+                  <div id="raw-score-row"><strong id="raw-score-label">raw score</strong>: <span id="raw-score">-</span></div>
+                  <div id="weighted-score-row"><strong id="weighted-score-label">weighted score</strong>: <span id="weighted-score">-</span></div>
+                </div>
+                <div>
+                  <p><strong>AI comment</strong></p>
+                  <p id="ai-comment" class="comment-box">-</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="manager-review-section" class="detail-section" hidden>
+              <h3>Manager / Owner Review</h3>
+              <p class="field-help section-help">검토 화면에서 manager/owner가 완료된 task에 대해 승인, 보완 요청, bonus 지급을 처리합니다.</p>
+              <div class="review-action-grid">
+                <label>
+                  <span>action reason</span>
+                  <input id="review-message-input" type="text" placeholder="승인/보완 요청/bonus 사유를 입력하세요." />
+                </label>
+                <label>
+                  <span>bonus points</span>
+                  <input id="delta-bonus-input" type="number" min="0.1" step="0.1" value="0.5" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="approve-button" type="button">승인</button>
+                <button id="request-changes-button" type="button">보완 요청</button>
+                <button id="delta-bonus-button" type="button">Delta Bonus 지급</button>
+              </div>
+              <p class="field-help review-actions-note">member에게는 이 영역이 표시되지 않습니다.</p>
+              <p id="review-action-message" class="muted"></p>
+            </section>
+
+            <section id="error-section" class="detail-section error-card" hidden>
+              <h3>처리 실패</h3>
+              <p class="field-help section-help">FAILED 상태입니다. 오류 내용을 확인한 뒤 retry로 다시 시도할 수 있습니다.</p>
+              <p id="error-text"></p>
+              <div class="actions">
+                <button id="retry-button" type="button">다시 시도</button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./api.js"></script>
+    <script src="./app.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const openButton = document.getElementById("open-task-create-modal");
+        const modal = document.getElementById("task-create-modal");
+        const form = document.getElementById("task-create-form");
+        const createMessage = document.getElementById("create-message");
+        const contextSummary = document.getElementById("context-summary");
+        const contextView = document.getElementById("context-view");
+        const modalTitle = document.getElementById("task-create-modal-title");
+        const modalHelp = document.getElementById("task-create-modal-help");
+        const submitButton = document.getElementById("task-form-submit-button");
+        const deleteButton = document.getElementById("task-form-delete-button");
+        const formModeInput = document.getElementById("task-form-mode");
+
+        if (!openButton || !modal || !form || !createMessage) {
+          return;
+        }
+
+        let submitPending = false;
+
+        const roleCanCreateTask = () => {
+          const summary = contextSummary?.textContent || "";
+          return /role:\s*(owner|manager)/.test(summary);
+        };
+
+        const updateCreateButtonVisibility = () => {
+          const canCreate = roleCanCreateTask();
+          openButton.hidden = !canCreate;
+          if (!canCreate && !modal.hidden) {
+            closeTaskCreateModal();
+          }
+        };
+
+        const resetTaskCreateModal = () => {
+          form.reset();
+          if (formModeInput) {
+            formModeInput.value = "create";
+          }
+          if (modalTitle) {
+            modalTitle.textContent = "Task 생성";
+          }
+          if (modalHelp) {
+            modalHelp.textContent = "현재 프로젝트 기준으로 task title, type, goal과 담당자를 지정합니다.";
+          }
+          if (submitButton) {
+            submitButton.textContent = "작업 등록";
+          }
+          if (deleteButton) {
+            deleteButton.hidden = true;
+          }
+          createMessage.textContent = "";
+          document.dispatchEvent(new CustomEvent("task-create-modal-reset"));
+        };
+
+        const openTaskCreateModal = () => {
+          resetTaskCreateModal();
+          modal.hidden = false;
+          document.getElementById("title")?.focus();
+        };
+
+        function closeTaskCreateModal() {
+          modal.hidden = true;
+          submitPending = false;
+          resetTaskCreateModal();
+        }
+
+        openButton.addEventListener("click", openTaskCreateModal);
+        modal.addEventListener("click", (event) => {
+          if (event.target.closest("[data-task-create-close]")) {
+            closeTaskCreateModal();
+          }
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !modal.hidden) {
+            closeTaskCreateModal();
+          }
+        });
+
+        form.addEventListener("submit", (event) => {
+          const title = document.getElementById("title")?.value.trim();
+          const taskType = document.getElementById("task-type")?.value.trim();
+          const taskGoal = document.getElementById("task-goal")?.value.trim();
+          const hasAssignee = Boolean(document.querySelector("[data-clear-assignee]"));
+          if (!title || !taskType || !taskGoal) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            createMessage.textContent = "task title, task type, task goal을 입력해 주세요.";
+            return;
+          }
+          if (!hasAssignee) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            createMessage.textContent = "담당자를 선택해 주세요.";
+            return;
+          }
+          submitPending = true;
+          window.setTimeout(() => {
+            if (submitPending && !modal.hidden && !createMessage.textContent.trim()) {
+              createMessage.textContent = formModeInput?.value === "edit"
+                ? "Task 저장에 실패했습니다. 입력값과 권한을 확인해 주세요."
+                : "Task 생성에 실패했습니다. 입력값과 권한을 확인해 주세요.";
+            }
+          }, 2500);
+        }, { capture: true });
+
+        new MutationObserver(() => {
+          if (
+            createMessage.textContent.includes("작업이 등록되었습니다")
+            || createMessage.textContent.includes("작업이 저장되었습니다")
+            || createMessage.textContent.includes("작업이 삭제되었습니다")
+          ) {
+            closeTaskCreateModal();
+          }
+        }).observe(createMessage, { childList: true, characterData: true, subtree: true });
+
+        if (contextSummary) {
+          new MutationObserver(updateCreateButtonVisibility)
+            .observe(contextSummary, { childList: true, characterData: true, subtree: true });
+        }
+        if (contextView) {
+          new MutationObserver(updateCreateButtonVisibility)
+            .observe(contextView, { attributes: true, subtree: true, attributeFilter: ["hidden", "disabled"] });
+        }
+        updateCreateButtonVisibility();
+      });
+    </script>
+  </body>
+</html>
