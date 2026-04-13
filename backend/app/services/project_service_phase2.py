@@ -378,6 +378,7 @@ def add_project_member(project_id: str, payload: ProjectMemberAddRequest) -> Pro
                 status_code=status.HTTP_409_CONFLICT,
                 detail="at least one owner or manager is required",
             )
+        _require_project_team_member(session, project.team_id, target_user_id)
         member = _ensure_project_member(
             session=session,
             project_id=project_id,
@@ -414,7 +415,7 @@ def update_project_member(
         target.role = payload.role.value
         if payload.display_name is not None:
             target.display_name = payload.display_name
-        _ensure_team_member(session, project.team_id, target.user_id, target.role, target.joined_at)
+        _require_project_team_member(session, project.team_id, target.user_id)
         session.flush()
         return _project_member_response(target, session.get(UserProfileRecord, target.user_id))
 
@@ -745,6 +746,9 @@ def _ensure_project_member(
     role: str,
     joined_at: datetime,
 ) -> ProjectMemberRecord:
+    project = get_project_or_404(session, project_id)
+    _require_project_team_member(session, project.team_id, user_id)
+
     stmt = select(ProjectMemberRecord).where(
         ProjectMemberRecord.project_id == project_id,
         ProjectMemberRecord.user_id == user_id,
@@ -826,6 +830,16 @@ def _require_team_member(session, team_id: str, user_id: str) -> TeamMemberRecor
     member = _get_team_member(session, team_id, user_id)
     if member is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="team membership required")
+    return member
+
+
+def _require_project_team_member(session, team_id: str, user_id: str) -> TeamMemberRecord:
+    member = _get_team_member(session, team_id, user_id)
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="해당 프로젝트에 참여하려면 먼저 팀에 소속되어야 합니다.",
+        )
     return member
 
 

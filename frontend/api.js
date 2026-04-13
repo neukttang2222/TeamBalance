@@ -3,7 +3,7 @@ const APP_CONTEXT_STORAGE_KEY = "team-balance-app-context";
 const AUTH_STORAGE_KEY = "team-balance-auth-session";
 
 const DEFAULT_LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
-const DEFAULT_DEPLOY_API_BASE_URL = "https://your-render-backend.onrender.com";
+const DEFAULT_DEPLOY_API_BASE_URL = "https://teambalance.onrender.com";
 const RESOLVED_API_BASE_URL = resolveApiBaseUrl();
 
 function resolveApiBaseUrl() {

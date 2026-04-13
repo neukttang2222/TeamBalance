@@ -352,8 +352,12 @@ function canUseSensitiveReview() {
   return state.projectRole === "owner" || state.projectRole === "manager";
 }
 
-function canManageTask(task) {
-  return Boolean(task && task.status === "TODO" && canUseSensitiveReview());
+function canManageTaskMetaRole() {
+  return state.projectRole === "owner" || state.projectRole === "manager";
+}
+
+function canEditTaskMeta(task) {
+  return Boolean(task && task.status === "TODO" && canManageTaskMetaRole());
 }
 
 function isMyView() {
@@ -705,7 +709,7 @@ function resetTaskCreateModalState() {
 function handleOpenTaskEditModal(taskId = state.selectedTaskId) {
   const task = state.tasks.find((item) => item.task_id === String(taskId)) || getSelectedTask();
   const modal = document.getElementById("task-create-modal");
-  if (!task || !canManageTask(task) || !modal) {
+  if (!task || !canEditTaskMeta(task) || !modal) {
     return;
   }
 
@@ -750,7 +754,7 @@ function handleOpenTaskEditModal(taskId = state.selectedTaskId) {
 
 async function handleDeleteTask() {
   const task = state.tasks.find((item) => item.task_id === state.editingTaskId) || getSelectedTask();
-  if (!task || !canManageTask(task)) {
+  if (!task || !canEditTaskMeta(task)) {
     setError("only TODO task can be deleted");
     setCreateMessage("");
     render();
@@ -1476,7 +1480,7 @@ function renderTaskList() {
           <span class="task-list-meta">${escapeHtml(task.task_type)} · ${escapeHtml(formatTaskWeight(task.task_weight))}</span>
           <span class="task-list-meta">담당자: ${escapeHtml(task.client_user_name || "담당자 미지정")}</span>
           <span class="task-list-meta">보기: ${escapeHtml(getTaskViewLabel(state.taskView))}</span>
-          ${canManageTask(task) ? `<span class="task-list-edit-wrap"><span class="task-list-edit-button" data-task-edit="${escapeHtml(task.task_id)}">편집</span></span>` : ""}
+          ${canEditTaskMeta(task) ? `<span class="task-list-edit-wrap"><span class="task-list-edit-button" data-task-edit="${escapeHtml(task.task_id)}">편집</span></span>` : ""}
           <span class="task-list-action">${escapeHtml(statusInfo.actionLabel)}</span>
           <span class="task-list-note">${escapeHtml(statusInfo.note)}</span>
           <span class="task-list-note">${hasDraft ? "저장된 내용은 서버에서 다시 불러오며, 제출 전 초안만 현재 페이지에서 임시 유지됩니다." : "저장된 task를 다시 열어 이어서 진행할 수 있습니다."}</span>

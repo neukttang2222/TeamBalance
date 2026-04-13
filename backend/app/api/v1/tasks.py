@@ -50,7 +50,11 @@ from app.schemas import (
     UserSearchResponse,
 )
 from app.services.auth_service import CurrentUser
-from app.services.project_membership import require_project_member, require_sensitive_review_access
+from app.services.project_membership import (
+    require_project_member,
+    require_sensitive_review_access,
+    require_task_create_access,
+)
 from app.services import (
     add_team_member,
     add_project_member,
@@ -414,9 +418,7 @@ def _require_task_edit_access(task_id: str, user_id: str) -> None:
         task_record = session.get(TaskRecord, task_id)
         if task_record is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
-        member = require_project_member(session, task_record.project_id, user_id)
-        if member.role not in {"owner", "manager"}:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="only owner or manager can edit task")
+        require_task_create_access(session, task_record.project_id, user_id)
 
 
 def _require_task_delete_access(task_id: str, user_id: str) -> None:
@@ -424,9 +426,7 @@ def _require_task_delete_access(task_id: str, user_id: str) -> None:
         task_record = session.get(TaskRecord, task_id)
         if task_record is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
-        member = require_project_member(session, task_record.project_id, user_id)
-        if member.role not in {"owner", "manager"}:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="only owner or manager can delete task")
+        require_task_create_access(session, task_record.project_id, user_id)
 
 
 def _require_task_assignee(task_id: str, user_id: str) -> None:
